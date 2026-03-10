@@ -26,4 +26,4 @@ The design includes:
 - EBAZ4205 board (based on Zynq-7010)
 - extention board
 - TEA5767 FM module
-- ADS1015 module
+- ADS1015 ADC module
