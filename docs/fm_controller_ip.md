@@ -20,11 +20,11 @@ The IP core implements:
 | 0x08   | FREQ_KHZ | WO   | Desired FM frequency in kHz    |
 | 0x0C   | CONFIG   | RW   | mute, mono/stereo, search mode |
 
-CTRL[1] - start
+CTRL[1] - start  
 CTRL[0] - stop
 
-STATUS[0] - 1 if busy;  0 if ready
+STATUS[0] - 1 if busy;  0 if ready  
 
-CONFIG[2] - if 1 - mute
+CONFIG[2] - if 1 - mute  
 CONFIG[1] - if 1 - mono; if 0 - stereo  
-CONFIG[0] - if 1 - search mdoe is on; if 0 - search mode is 0
+CONFIG[0] - if 1 - search mdoe is on; if 0 - search mode is 0  
