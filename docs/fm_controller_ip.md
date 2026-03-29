@@ -62,10 +62,10 @@ Configuration parameters
 ### SCAN_RESULT Register (0x10)
 Contains result of the last sucessful scan operation 
 
-| Bit  | Name     | Description                       |
-| ---- | -------- | --------------------------------- |
-| 17   | STEREO   | Stereo indicator                  |
-| 16:0 | FREQ_KHZ | Detected station frequency in kHz |
+| Bit  | Name     | Description                          |
+| ---- | -------- | ------------------------------------ |
+| 17   | STEREO   | Stereo indicator                     |
+| 10:0 | FREQ_KHZ | Detected station frequency in 100kHz |
 
 ## Operation Sequence
 
