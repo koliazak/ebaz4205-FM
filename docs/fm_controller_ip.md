@@ -45,7 +45,7 @@ Indicates the current state of the controller.
 ### FREQ_KHZ Register (0x08)
 Specifies the desired FM frequency.
 
-Example - `101700 = 101.7 MHz`   
+Example - `1017 = 101.7 MHz`  
 
 ### CONFIG Register (0x0C)
 Configuration parameters
