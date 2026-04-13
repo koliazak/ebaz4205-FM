@@ -17,7 +17,14 @@ module top (
 
     output reg  error_led,
     output wire busy_led,
-    output wire search_en_led
+    output wire search_en_led,
+    
+    
+    output wire        i2s_mclk,
+    input  wire        i2s_bclk,  
+    input  wire        i2s_lrck,
+    input  wire        i2s_din 
+    
 
 );
 
@@ -155,7 +162,7 @@ module top (
 
 
     always @(posedge clk) begin
-        if (!rst_n) begin
+            if (!rst_n) begin
             lcd_valid <= 0;
         end else begin
             if (render_done) begin
@@ -238,4 +245,44 @@ module top (
         .sda_t(sda_t)
     );
 
+
+    wire clk_8_192;
+    // clocking wizard is set to 8.192MHz
+    clk_wiz_0 u_clk_8_192(.clk_in1(clk), .clk_out1(clk_8_192));
+    reg clk_4_096 = 0;
+    always @(posedge clk_8_192) begin
+        clk_4_096 <= ~clk_4_096;
+    end
+    
+    assign i2s_mclk = clk_4_096;
+    
+    wire[23:0] audio_left;
+    wire[23:0] audio_right;    
+
+    top_i2s_rx_module #(
+        .FRAME_RES(32),
+        .DATA_RES(24)
+    ) u_i2s_rx(
+    .bck_i(i2s_bclk),
+    .lrck_i(i2s_lrck), 
+    .dat_i(i2s_din),
+    .left_o(audio_left),
+    .right_o(audio_right)
+    );
+    
+    
+    (* mark_debug = "true" *) wire [7:0] compressed_audio_left;    
+    (* mark_debug = "true" *) wire [7:0] compressed_audio_right;    
+    
+    alaw_encoder alaw_inst1(
+	   .pcm_in(audio_right[23:11]),
+	   .alaw_out(compressed_audio_right)
+    );
+    
+    alaw_encoder alaw_inst2(
+	   .pcm_in(audio_left[23:11]),
+	   .alaw_out(compressed_audio_left)
+    );
+
+    
 endmodule
