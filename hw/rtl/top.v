@@ -23,8 +23,12 @@ module top (
     output wire        i2s_mclk,
     input  wire        i2s_bclk,  
     input  wire        i2s_lrck,
-    input  wire        i2s_din 
+    input  wire        i2s_din, 
     
+    output wire [31:0] m_axis_audio_tdata,
+    output wire        m_axis_audio_tvalid,
+    input  wire        m_axis_audio_tready,
+    output wire        m_axis_audio_tlast
 
 );
 
@@ -196,10 +200,27 @@ module top (
     // I2C ports
     wire scl_i, scl_o, scl_t;
     wire sda_i, sda_o, sda_t;    
-    assign i2c_scl = scl_t ? 1'bz : scl_o;
-    assign scl_i   = i2c_scl;
-    assign i2c_sda = sda_t ? 1'bz : sda_o;
-    assign sda_i   = i2c_sda;
+
+    // Для SCL
+    IOBUF i2c_scl_iobuf (
+        .IO(i2c_scl), // Підключається безпосередньо до входу/виходу модуля
+        .I(scl_o),    // Вихідний сигнал від контролера
+        .O(scl_i),    // Вхідний сигнал до контролера
+        .T(scl_t)     // Керування: 0 = вихід, 1 = вхід (Z)
+    );
+
+    // Для SDA
+    IOBUF i2c_sda_iobuf (
+        .IO(i2c_sda),
+        .I(sda_o),
+        .O(sda_i),
+        .T(sda_t)
+    );
+
+//    assign i2c_scl = scl_t ? 1'bz : scl_o;
+//    assign scl_i   = i2c_scl;
+//    assign i2c_sda = sda_t ? 1'bz : sda_o;
+//    assign sda_i   = i2c_sda;
 
     tea5767_controller i_tea5767_controller(
         .clk(clk),
@@ -284,5 +305,46 @@ module top (
 	   .alaw_out(compressed_audio_left)
     );
 
+    reg lrck_sync1, lrck_sync2;
+    always @(posedge clk) begin
+        lrck_sync1 <= i2s_lrck;
+        lrck_sync2 <= lrck_sync1;
+    end
+
+    wire sample_ready_pulse = (lrck_sync2 && !lrck_sync1); 
+
+    reg [31:0] axis_tdata_reg;
+    reg        axis_tvalid_reg;
+    reg        axis_tlast_reg;
+    reg [8:0]  sample_counter;
     
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            axis_tvalid_reg <= 1'b0;
+            axis_tdata_reg <= 32'd0;
+            axis_tlast_reg <= 1'b0;
+            sample_counter <= 9'd0;
+        end else begin
+            if (sample_ready_pulse) begin
+                axis_tvalid_reg <= 1'b1;
+                axis_tdata_reg  <= {16'b0, compressed_audio_left, compressed_audio_right};
+                    
+                if (sample_counter == 9'd511) begin
+                    axis_tlast_reg <= 1'b1;
+                    sample_counter <= 9'd0;
+                end else begin
+                    axis_tlast_reg <= 1'b0;
+                    sample_counter <= sample_counter + 1'b1;                
+                end
+                
+            end else if (m_axis_audio_tready && axis_tvalid_reg) begin
+                axis_tvalid_reg <= 1'b0;
+                axis_tlast_reg  <= 1'b0;
+            end
+        end
+    end
+    
+    assign m_axis_audio_tdata  = axis_tdata_reg;
+    assign m_axis_audio_tvalid = axis_tvalid_reg;
+    assign m_axis_audio_tlast  = axis_tlast_reg;
 endmodule

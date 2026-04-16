@@ -1,0 +1,17 @@
+/include/ "system-conf.dtsi"
+/ {
+    reserved-memory {
+        #address-cells = <1>;
+        #size-cells = <1>;
+        ranges;
+        
+        audio_dma_mem: buffer@0FE00000 {
+            no-map; 
+            reg = <0x0FE00000 0x00200000>;
+        };
+    };
+};
+
+&axi_dma_0 {
+    compatible = "generic-uio";
+};
