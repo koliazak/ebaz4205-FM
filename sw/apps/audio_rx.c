@@ -58,8 +58,14 @@ int main() {
             continue;
         }
        
-        printf("Sample: %02x %02x %02x %02x\n", audio_buf[0], audio_buf[1], audio_buf[2], audio_buf[3]);
-        
+        // printf("Sample: %02x %02x %02x %02x\n", audio_buf[0], audio_buf[1], audio_buf[2], audio_buf[3]);
+        uint8_t out_buf[1024];
+        for (int j = 0; j < 512; j++) {
+            out_buf[j*2+0] = audio_buf[j*4+1]; // left
+            out_buf[j*2+1] = audio_buf[j*4+0];  // right
+        }
+        fwrite(out_buf, sizeof(uint8_t), sizeof(out_buf), stdout);
+        fflush(stdout);
     }
 
     return 0;
