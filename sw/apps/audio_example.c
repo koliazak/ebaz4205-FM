@@ -20,7 +20,9 @@ int main() {
     int fd_mem = open("/dev/mem", O_RDWR | O_SYNC);
     volatile uint8_t *audio_buf = (volatile uint8_t *)mmap(NULL, 0x200000, PROT_READ | PROT_WRITE, MAP_SHARED, fd_mem, RAM_BUFFER_ADDR);
 
-    
+    printf("DMA and RAM mapped successfully!\n");
+
+
     dma_regs[S2MM_CR] = 0x1001;          // Bit 0 = Run, bit 12 = Enable Interrupts (IOC_IrqEn)
     dma_regs[S2MM_DA] = RAM_BUFFER_ADDR; // Where to write
 
@@ -36,33 +38,34 @@ int main() {
 
         // Program sleeps. Wakes up when FIFO recieves 2048's byte and activates tlast
         read(fd_uio, &irq_count, sizeof(irq_count));
-        
+
         uint32_t status = dma_regs[S2MM_SR];
-        
+
         // Reset all possible interrupts: IOC_Irq (bit 12), Dly_Irq (bit 13), Err_Irq (bit 14)
         dma_regs[S2MM_SR] = 0x7000;
-  
+
         // Catch errors and reset
         if (status & 0x00000001) {
-            fprintf(stderr, "WARNING: DMA Halted! Status = 0x%08x. Reset...\n", status);
-            
+            printf("WARNING: DMA Halted! Status = 0x%08x. Reset...\n", status);
+
             // reset
             dma_regs[S2MM_CR] = 0x0004;
             while(dma_regs[S2MM_CR] & 0x0004);
-         
+
             // start again
             dma_regs[S2MM_CR] = 0x1001;
             dma_regs[S2MM_DA] = RAM_BUFFER_ADDR; 
             continue;
         }
-       
-        uint8_t out_buf[1024];
-        for (int j = 0; j < 512; j++) {
-            out_buf[j*2+0] = audio_buf[j*4+1]; // left
-            out_buf[j*2+1] = audio_buf[j*4+0];  // right
-        }
-        fwrite(out_buf, sizeof(uint8_t), sizeof(out_buf), stdout);
-        fflush(stdout);
+
+        printf("Sample: %02x %02x %02x %02x\n", audio_buf[0], audio_buf[1], audio_buf[2], audio_buf[3]);
+        
+
+
+
+
+
+
     }
 
     return 0;
