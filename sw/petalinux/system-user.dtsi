@@ -15,3 +15,7 @@
 &axi_dma_0 {
     compatible = "generic-uio";
 };
+
+&fm_radio_ctrl_0 {
+    compatible = "generic-uio";
+};
