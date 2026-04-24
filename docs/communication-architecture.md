@@ -54,7 +54,7 @@ The device also supports certificate lifecycle operations (bootstrap + rotation)
 
 
 
-## 4.1 Device Runtime Flow (mTLS only)
+### 4.1 Device Runtime Flow (mTLS only)
 
 1. Device opens TLS connection to relay endpoint.
 2. Relay presents server certificate; device validates chain + hostname.
@@ -66,7 +66,7 @@ As a result: secure bidirectional channel with strong device authentication.
 
 ---  
 
-## 4.2 Browser/Client Runtime Flow (JWT Only)
+### 4.2 Browser/Client Runtime Flow (JWT Only)
 
 1. User authenticates via standard HTTPS POST to the relay server.
 2. Server validates credentials and returns a signed JWT.
@@ -76,7 +76,7 @@ As a result: secure bidirectional channel with strong device authentication.
 
 ---  
 
-## 4.3 Certificate Renewal Flow (Periodic, every N days)
+### 4.3 Certificate Renewal Flow (Periodic, every N days)
 
 1. Device initiates renewal before certificate expiration (at 80% lifetime or fixed interval).
 2. Device calls renewal endpoint using current valid mTLS credentials.
@@ -87,7 +87,7 @@ As a result: secure bidirectional channel with strong device authentication.
 
 ---  
 
-## 4.4 Bootstrap / Recovery Flow
+### 4.4 Bootstrap / Recovery Flow
 
 Used for first cerificate or expired certificate recovery.
 
