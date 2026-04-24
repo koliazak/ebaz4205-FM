@@ -1,124 +1,72 @@
-# Secure Communication Architecture for Electronic Device and Relay Server
+# Device - Relay Security Architecture (JWT)
 
-## 1. Overview
+## Overview
 
-This document describes a secure communication architecture between:
+This architecture secures communication between a Zynq-7010 (PetaLinux) device and a public Relay Server (AWS EC2).
 
-- Device (Zynq-7010 based board)
-- Relay Server (AWS EC2 endpoint)
+The device uses:
 
-The device maintains one WebSocket channel to the relay server:
+- WebSocket channel for audio transpher
+- WebSocket channel for command accept
 
-1. Audio stream WebSocket** (device -> relay): streams audio data
-2. Command WebSocket (relay -> device): delivers control commands
+Security is based on:
 
-The core transport security model is **mutual TLS (mTLS)**.  
-The device also supports certificate lifecycle operations (bootstrap + rotation) and application-level authorization (JWT).
-
----
-
-## 2. Security Goals
-
-- Authenticate both server and device (bidirectional trust)
-- Encrypt all traffic in transit
-- Allow secure certificate renewal before expiration
-- Recover from expired or missing certificates via bootstrap flow
-- Protect command and streaming channels against unauthorized access
-- Keep device identity stable and auditable
+- `wss://`, `https://` for encrypted transport
+- JWT access tokens for auth
 
 ---
 
-## 3. High-Level Architecture
-
-### 3.1 Components
+## Components
 
 - **Device Agent**
-  - Holds device private key and certificate
-  - Opens WebSocket connections over TLS
-  - Performs certificate renewal
-  - Falls back to bootstrap endpoint if needed
+  - Stores credentials/tokens securely
+  - Handles token refresh and WebSocket reconnect
 
-- **Relay Server**
-  - Terminates TLS/mTLS
-  - Authorizes WebSocket sessions
-  - Routes audio and commands
+- **Auth**
+  - Issues/refreshes tokens
 
-- **Certificate/Enrollment Service** (part of relay backend)
-  - Issues and renews client certificates
-  - Renewal endpoint (mTLS-protected)
-  - Bootstrap endpoint (Bearer-based initial enrollment / recovery)
+- **Relay**
+  - Validates JWT on WebSocket connection
+  - Enforces permissions
+  - Routes audio and command traffic
 
 ---
 
-## 4. Communication Flows
+## Identity and Bootstrap
 
+Each device has:
 
+- `device_id` (stable unique identifier)
+- provisioned `secret`
 
-### 4.1 Device Runtime Flow (mTLS only)
+---
 
-1. Device opens TLS connection to relay endpoint.
-2. Relay presents server certificate; device validates chain + hostname.
-3. Relay requests client certificate.
-4. Device presents client cert; relay validates it.
-5. WebSocket upgrade occurs over established mTLS channel.
+## Runtime Flows
 
-As a result: secure bidirectional channel with strong device authentication.
+1. **Bootstrap**
+   - Device calls `POST /device/auth` with `HMAC(secret, device_id:timestamp:nonce)`
+   - Receives `access_token`, `expires_in`
 
----  
+2. **Normal operation**
+   - Device connects to `wss://relay/...` using access token
+   - Relay validates JWT and scope
+   - Audio/commands flow through dedicated WebSocket channels
 
-### 4.2 Browser/Client Runtime Flow (JWT Only)
+3. **Refresh**
+   - Device refreshes before access token expiry (`POST /device/auth (HMAC)`)
+   - Receives new token
 
-1. User authenticates via standard HTTPS POST to the relay server.
-2. Server validates credentials and returns a signed JWT.
-3. Browser opens a secure WebSocket (WSS) connection to the client endpoint.
-4. Browser passes the JWT.
-5. Server validates the JWT signature and claims before allowing access to the audio stream and control channels.
+4. **Recovery**
+   - If refresh fails irrecoverably, device performs bootstrap again
 
----  
+---
 
-### 4.3 Certificate Renewal Flow (Periodic, every N days)
+## Relay Validation Rules
 
-1. Device initiates renewal before certificate expiration (at 80% lifetime or fixed interval).
-2. Device calls renewal endpoint using current valid mTLS credentials.
-3. Device submits CSR generated from on-device private key.
-4. Enrollment service validates device policy and issues new short-lived client cert.
-5. Device atomically stores new cert, keeps private key secure.
-6. Device reloads connection using updated cert.
+Relay must validate:
 
----  
-
-### 4.4 Bootstrap / Recovery Flow
-
-Used for first cerificate or expired certificate recovery.
-
-1. Device calls bootstrap endpoint over https.
-2. Device sends Bearer token derived from:
-   - eth0 MAC address
-   - embedded secret
-3. Server validates token.
-4. Device submits CSR and receives initial/recovery cert.
-5. Device switches to mTLS-only operational mode.
-
----  
-
-## 5. Endpoint Set
-
-**Device Endpoints (Hardware ➔ Relay):**
-- `wss://relay/device/ws` (mTLS Only) - Full-duplex channel for sending audio and recieving commands.
-- `POST https://relay/api/cert/renew` (mTLS, CSR in body)
-- `POST https://relay/api/cert/bootstrap` (Standard TLS + Bearer token, CSR in body)
-
-**Client Endpoints (Browser ➔ Relay):**
-- `POST https://relay/api/auth/login` (Standard TLS, returns JWT)
-- `wss://relay/client/ws` (JWT Auth) - Full-duplex channel for audio and commands.
-
----  
-
-## 6. Implementation Checklist
-
-- [ ] CSR-based issuance implemented
-- [ ] Renewal scheduler
-- [ ] Bootstrap token uses HMAC
-- [ ] mTLS used on WebSocket endpoints
-- [ ] JWT validation for client
-- [ ] Monitoring/alerting for renewal and auth failures configured
+- JWT signature
+- `iss` and `aud`
+- `exp` with small clock-skew tolerance
+- `device_id` is active
+- required `scope` for the channel/action
