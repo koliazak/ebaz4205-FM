@@ -36,6 +36,7 @@ Indicates the current state of the controller.
 
 | Bit | Name          | Mode | Description                               |
 | --- | ------------- | ---- | ----------------------------------------- |
+| 6   | SEARCH_MODE   | RO   | 1 if search mode is active                |
 | 5   | TUNED         | RO   | 1 if tuner is locked to requested station |
 | 4   | SCANNING      | RO   | 1 if auto-scan is currently active        |
 | 3   | STEREO        | RO   | 1 if tuned station is broadcasting stereo |
@@ -58,7 +59,7 @@ Configuration parameters applied during the next `START` assertion.
 | --- | --------- | ---- | ------------------------------------------- |
 | 4   | STANDBY   | RW   | 1 - Standby mode (low power)                |
 | 3   | SEARCH_UP | RW   | 1 - Search up the band; 0 - Search down     |
-| 2   | SEARCH_EN | RW   | 1 - Enable automatic station search         |
+| 2   | SEARCH_EN | W1S  | 1 - Toggle search mode (Auto-clears to 0)   |
 | 1   | MONO      | RW   | 1 - Force mono output; 0 - Stereo mode      |
 | 0   | MUTE      | RW   | 1 - Audio output muted                      |
 
