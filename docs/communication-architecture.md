@@ -33,26 +33,20 @@ The device also supports certificate lifecycle operations (bootstrap + rotation)
 ### 3.1 Components
 
 - **Device Agent**
-  - Holds device private key and client certificate
+  - Holds device private key and certificate
   - Opens WebSocket connections over TLS
   - Performs certificate renewal
   - Falls back to bootstrap endpoint if needed
 
 - **Relay Server**
   - Terminates TLS/mTLS
-  - Verifies device certificate chain and revocation status (if enabled)
-  - Authorizes WebSocket sessions (JWT claims, certificate identity mapping)
+  - Authorizes WebSocket sessions
   - Routes audio and commands
 
-- **Certificate/Enrollment Service** (can be part of relay backend)
+- **Certificate/Enrollment Service** (part of relay backend)
   - Issues and renews client certificates
-  - Exposes:
-    - **Renewal endpoint** (mTLS-protected)
-    - **Bootstrap endpoint** (Bearer-based initial enrollment / recovery)
-
-- **Certificate Authority (CA)**
-  - Dedicated CA for device certificates (recommended)
-  - Optional intermediate CA for separation of duties
+  - Renewal endpoint (mTLS-protected)
+  - Bootstrap endpoint (Bearer-based initial enrollment / recovery)
 
 ---
 
