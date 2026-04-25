@@ -125,11 +125,12 @@
     wire hw_status_stereo;
     wire hw_status_scanning;
     wire hw_status_tuned;
-	
+    wire hw_status_search_mode;
+    
     wire hw_scan_result_stereo;
     wire [10:0] hw_scan_result_khz;
         
-    assign hw_status_reg = {26'd0, hw_status_tuned, hw_status_scanning, hw_status_stereo, 
+    assign hw_status_reg = {26'd0, hw_status_search_mode, hw_status_tuned, hw_status_scanning, hw_status_stereo, 
                             hw_status_station_found, hw_status_done, hw_status_busy};
     
     assign hw_scan_result_reg = {20'd0, hw_scan_result_stereo, hw_scan_result_khz};
@@ -210,6 +211,7 @@
     .hw_status_stereo(hw_status_stereo),
     .hw_status_scanning(hw_status_scanning),
     .hw_status_tuned(hw_status_tuned),
+    .hw_status_search_mode(hw_status_search_mode),
     .hw_scan_result_khz(hw_scan_result_khz),
     .hw_scan_result_stereo(hw_scan_result_stereo),
   

@@ -268,6 +268,7 @@
           // Autoclear when no write transaction	      
 	      else begin
 	       slv_reg0[2:0] <= 3'b000;
+	       slv_reg3[2]   <= 1'b0;
 	      end
       
 	   

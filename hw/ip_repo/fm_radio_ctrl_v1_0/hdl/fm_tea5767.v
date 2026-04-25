@@ -297,5 +297,11 @@ module tea5767_controller (
             endcase
         end
     end
-
+    
+    assign station_found      = status_b0[7] & ~status_b0[6];
+    assign scanning           = ~status_b0[7];                
+    assign tuned              = status_b0[7];                 
+    assign stereo             = status_b2[7];                 
+    assign scan_result_stereo = status_b2[7];
+    
 endmodule
