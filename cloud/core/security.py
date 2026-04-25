@@ -91,7 +91,7 @@ def create_user_jwt(user_id: str, scope: list[str]) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def verify_jwt_token(token: str) -> str:
+def verify_jwt_token(token: str) -> dict:
     payload = jwt.decode(
         token,
         SECRET_KEY,
