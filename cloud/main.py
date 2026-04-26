@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 
-from core.database import init_db
+from core.database import init_db, add_user
 from routers import device_api, client_api
 
 
@@ -26,7 +26,6 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Relay Server...")
     logger.info("Starting SQLite...")
     await init_db()
-
     yield
 
     logger.info("Stopping Relay Server...")

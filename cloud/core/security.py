@@ -4,31 +4,33 @@ import time
 import hashlib
 from datetime import datetime, timedelta, UTC
 
-SECRET_KEY = "SECRET_KEY"
+from core.config import config
+
+# SECRET_KEY = "SECRET_KEY"
 HMAC_SECRETS = {
     "zynq_01": b"device_secret_123",
 }
 
-ALGORITHM = "HS256"
-CLOCK_SKEW_TOLERANCE = 10
+# ALGORITHM = "HS256"
+# CLOCK_SKEW_TOLERANCE = 10
 
-EXPECTED_ISSUER = "urn:techforge:auth"
-EXPECTED_AUDIENCE = "urn:techforge:relay"
+# EXPECTED_ISSUER = "urn:techforge:auth"
+# EXPECTED_AUDIENCE = "urn:techforge:relay"
 
-ACCESS_TOKEN_LIFETIME = 900 # 15 min
+# ACCESS_TOKEN_LIFETIME = 900 # 15 min
 
 ACTIVE_DEVICES = {
     "zynq_01": {"is_active": True},
 }
 
 USED_NONCES = {}
-NONCE_TTL = 60 # sec
+# NONCE_TTL = 60 # sec
 
 
 def _cleanup_nonces():
     now = time.time()
     for n in list(USED_NONCES):
-        if now - USED_NONCES[n] > NONCE_TTL:
+        if now - USED_NONCES[n] > int(config.NONCE_TTL):
             del USED_NONCES[n]
 
 def verify_nonce(nonce: str) -> bool:
@@ -61,44 +63,44 @@ def verify_device_auth(device_id: str, timestamp: int, nonce: str, signature: st
 # JWT
 
 def create_device_jwt(device_id: str, scope: list[str]) -> str:
-    expire = datetime.now(UTC) + timedelta(seconds=ACCESS_TOKEN_LIFETIME)
+    expire = datetime.now(UTC) + timedelta(seconds=config.ACCESS_TOKEN_LIFETIME)
 
     payload = {
         "sub": f"device:{device_id}",
         "type": "device",
         "scope": scope,
-        "iss": EXPECTED_ISSUER,
-        "aud": EXPECTED_AUDIENCE,
+        "iss": config.EXPECTED_ISSUER,
+        "aud": config.EXPECTED_AUDIENCE,
         "iat": datetime.now(UTC),
         "exp": expire
     }
 
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, config.JWT_SECRET, algorithm=config.ALGORITHM)
 
 def create_user_jwt(user_id: str, scope: list[str]) -> str:
-    expire = datetime.now(UTC) + timedelta(seconds=ACCESS_TOKEN_LIFETIME)
+    expire = datetime.now(UTC) + timedelta(seconds=config.ACCESS_TOKEN_LIFETIME)
 
     payload = {
         "sub": f"user:{user_id}",
         "type": "user",
         "scope": scope,
-        "iss": EXPECTED_ISSUER,
-        "aud": EXPECTED_AUDIENCE,
+        "iss": config.EXPECTED_ISSUER,
+        "aud": config.EXPECTED_AUDIENCE,
         "iat": datetime.now(UTC),
         "exp": expire
     }
 
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, config.JWT_SECRET, algorithm=config.ALGORITHM)
 
 
 def verify_jwt_token(token: str) -> dict:
     payload = jwt.decode(
         token,
-        SECRET_KEY,
-        algorithms=[ALGORITHM],
-        issuer=EXPECTED_ISSUER,
-        audience=EXPECTED_AUDIENCE,
-        leeway=CLOCK_SKEW_TOLERANCE
+        config.JWT_SECRET,
+        algorithms=[config.ALGORITHM],
+        issuer=config.EXPECTED_ISSUER,
+        audience=config.EXPECTED_AUDIENCE,
+        leeway=config.CLOCK_SKEW_TOLERANCE
     )
     return payload
 

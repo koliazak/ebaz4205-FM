@@ -1,0 +1,8 @@
+{
+  "ALGORITHM": "HS256",
+  "CLOCK_SKEW_TOLERANCE": 10,
+  "EXPECTED_ISSUER": "urn:techforge:auth",
+  "EXPECTED_AUDIENCE": "urn:techforge:relay",
+  "ACCESS_TOKEN_LIFETIME": 900,
+  "NONCE_TTL": 60
+}

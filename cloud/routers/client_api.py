@@ -3,13 +3,14 @@ import logging
 import aiosqlite
 import jwt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status, HTTPException
-from bcrypt import hashpw, checkpw
+from bcrypt import hashpw, checkpw, gensalt
 from pydantic import BaseModel
 
 from core.state import active_clients, active_devices
 from core.security import verify_jwt_token, require_user, create_user_jwt
 from core.database import add_user, find_user
 
+salt: bytes = gensalt()
 
 class UserAuthRequest(BaseModel):
     username: str
@@ -24,7 +25,7 @@ USERS_DB = {}
 @router.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
 async def register_user(user: UserAuthRequest):
 
-    hashed_password = hashpw(user.password.encode("utf-8"), b"0")
+    hashed_password = hashpw(user.password.encode("utf-8"), salt)
     try:
         await add_user(username=user.username, hashed_password=hashed_password)
     except aiosqlite.IntegrityError:

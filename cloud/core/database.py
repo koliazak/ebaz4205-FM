@@ -29,7 +29,7 @@ async def init_db():
 
 async def add_user(username, hashed_password) -> Optional[aiosqlite.IntegrityError]:
     async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("INSERT INTO users (username, password_hash) VALUES(?, ?) ", username, hashed_password)
+        await db.execute("INSERT INTO users (username, password_hash) VALUES(?, ?) ", (username, hashed_password))
         await db.commit()
 
 
