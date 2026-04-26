@@ -1,5 +1,6 @@
 import logging
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import jwt
 
@@ -24,7 +25,7 @@ class DeviceAuthRequest(BaseModel):
 
 @router.post("/api/device/login")
 async def login_device(req: DeviceAuthRequest):
-    is_valid = verify_device_auth(
+    is_valid = await verify_device_auth(
         device_id=req.device_id,
         timestamp=req.timestamp,
         nonce=req.nonce,
@@ -34,23 +35,33 @@ async def login_device(req: DeviceAuthRequest):
     if not is_valid:
         raise HTTPException(status_code=401, detail="Unauthorized: Invalid signature or expired request")
 
-    scopes = ["audio:stream", "cmd:receive"]
-    token = create_device_jwt(device_id=req.device_id, scope=scopes)
+    token = create_device_jwt(device_id=req.device_id, scope=["audio:stream", "cmd:receive"])
     return {"access_token": token}
 
-@router.websocket("devive/ws")
-async def device_websocket(websocket: WebSocket, token: str):
+@router.websocket("/device/ws")
+async def device_websocket(websocket: WebSocket):
+
+    auth_header = websocket.headers.get("authorization")
+
+    if not auth_header or not auth_header.startswith("Bearer "):
+        logger.warning("WS Handshake Failed: Missing or invalid Authorization header")
+        await websocket.close(code=1008)
+        return
+
+    token = auth_header.split(" ")[1]
+
     try:
         payload = verify_jwt_token(token)
-        device_id = require_device(payload=payload, required_scope="audio:stream")
+        # print(f"{payload=}: {payload["sub"]}")
+        device_id = await require_device(payload=payload, required_scope="audio:stream")
     except jwt.InvalidTokenError as ex:
         logger.warning(f"WS Auth Failed: {ex}")
         await websocket.close(1008)
         return
 
-    await websocket.accept()
-    active_devices[payload.get("sub").split(":", 1)[1]] = websocket
+    active_devices[payload["sub"].split(":", 1)[1]] = websocket
     logger.info(f"Device {device_id} connected securely!")
+    await websocket.accept()
 
     try:
         while True:
@@ -73,5 +84,4 @@ async def device_websocket(websocket: WebSocket, token: str):
         logger.info(f"Device {device_id} disconnected")
     except Exception as e:
         logger.error(f"Unexpected error with device '{device_id}': {e}", exc_info=True)
-
 

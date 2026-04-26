@@ -39,3 +39,10 @@ async def find_user(username) -> Optional[dict]:
         cursor = await db.execute("SELECT * FROM users WHERE username = ?", (username,))
         db_user = await cursor.fetchone()
         return db_user
+
+async def find_device(device_id) -> Optional[dict]:
+    async with aiosqlite.connect(DB_FILE) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT * FROM devices WHERE device_id = ?", (device_id,))
+        db_device = await cursor.fetchone()
+        return db_device

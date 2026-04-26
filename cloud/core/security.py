@@ -4,27 +4,13 @@ import time
 import hashlib
 from datetime import datetime, timedelta, UTC
 
+from cryptography.hazmat.primitives.ciphers import aead
+
 from core.config import config
+from core.database import find_device
 
-# SECRET_KEY = "SECRET_KEY"
-HMAC_SECRETS = {
-    "zynq_01": b"device_secret_123",
-}
-
-# ALGORITHM = "HS256"
-# CLOCK_SKEW_TOLERANCE = 10
-
-# EXPECTED_ISSUER = "urn:techforge:auth"
-# EXPECTED_AUDIENCE = "urn:techforge:relay"
-
-# ACCESS_TOKEN_LIFETIME = 900 # 15 min
-
-ACTIVE_DEVICES = {
-    "zynq_01": {"is_active": True},
-}
 
 USED_NONCES = {}
-# NONCE_TTL = 60 # sec
 
 
 def _cleanup_nonces():
@@ -46,8 +32,9 @@ def generate_hmac(secret: bytes, message: str) -> str:
     return hmac.new(secret, message.encode(), hashlib.sha256).hexdigest()
 
 # HMAC auth
-def verify_device_auth(device_id: str, timestamp: int, nonce: str, signature: str) -> bool:
-    if device_id not in HMAC_SECRETS:
+async def verify_device_auth(device_id: str, timestamp: int, nonce: str, signature: str) -> bool:
+    db_device = await find_device(device_id)
+    if not db_device:
         return False
 
     now = int(time.time())
@@ -55,7 +42,7 @@ def verify_device_auth(device_id: str, timestamp: int, nonce: str, signature: st
         return False
 
     message = f"{device_id}:{timestamp}:{nonce}"
-    expected = generate_hmac(HMAC_SECRETS[device_id], message)
+    expected = generate_hmac(db_device["device_secret"].encode("utf-8"), message)
 
     return hmac.compare_digest(expected, signature)
 
@@ -105,7 +92,7 @@ def verify_jwt_token(token: str) -> dict:
     return payload
 
 
-def require_device(payload: dict, required_scope: str) -> str:
+async def require_device(payload: dict, required_scope: str) -> str:
     if payload.get("type") != "device":
         raise jwt.InvalidTokenError("Not a device token")
 
@@ -114,8 +101,9 @@ def require_device(payload: dict, required_scope: str) -> str:
         raise jwt.InvalidTokenError("Invalid subject")
 
     device_id = sub.split(":", 1)[1]
-    device_record = ACTIVE_DEVICES.get(device_id)
-    if not device_record or not device_record.get("is_active"):
+    device_record = await find_device(device_id)
+    print("device_record.get('is_active')", device_record["is_active"])
+    if not device_record or not device_record["is_active"]:
         raise jwt.InvalidTokenError("Device inactive")
 
     scopes = payload.get("scope", [])
