@@ -131,6 +131,10 @@ class FPGARadioController:
     def search_up(self):
         if self.mem is None:
             return False
+        
+        current_freq = self.get_freq()
+        self.set_freq(current_freq + 0.2)
+
         is_search_active = self.get_search_status()
 
         if not is_search_active:
@@ -147,11 +151,19 @@ class FPGARadioController:
 
         self.mem.seek(CTRL_REG)
         self.mem.write(struct.pack("<I", 1))
-        return True
+       
+        #self.toggle_search_mode();
+
+        self.wait_irq()
+        return self.get_freq()
 
     def search_down(self):
         if self.mem is None:
             return False
+
+        current_freq = self.get_freq()
+        self.set_freq(current_freq - 0.1)
+
         is_search_active = self.get_search_status()
 
         if not is_search_active:
@@ -168,7 +180,11 @@ class FPGARadioController:
 
         self.mem.seek(CTRL_REG)
         self.mem.write(struct.pack("<I", 1))
-        return True
+        
+        #self.toggle_search_mode();
+
+        self.wait_irq()
+        return self.get_freq()
 
     def get_search_status(self):
         if self.mem is None:

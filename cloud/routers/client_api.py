@@ -24,8 +24,11 @@ USERS_DB = {}
 
 @router.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
 async def register_user(user: UserAuthRequest):
+    if len(user.password) < 8 or len(user.password) > 20:
+        raise HTTPException(status_code=422, detail="Error: password must be 8-20 symbols")
 
     hashed_password = hashpw(user.password.encode("utf-8"), salt)
+
     try:
         await add_user(username=user.username, hashed_password=hashed_password)
     except aiosqlite.IntegrityError:

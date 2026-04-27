@@ -180,19 +180,59 @@ let currentRotation = 0;
 const MIN_ANGLE = -135, MAX_ANGLE = 135;
 
 window.localPlayerVolume = 0.5;
-
 knob.style.transform = `rotate(${currentRotation}deg)`;
-knob.addEventListener('mousedown', () => isDragging = true);
+
+function getCoords(e) {
+    if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    return { x: e.clientX, y: e.clientY };
+}
+
+function startDrag(e) {
+    isDragging = true;
+    if (e.type === 'touchstart') e.preventDefault();
+}
+
+knob.addEventListener('mousedown', startDrag);
+knob.addEventListener('touchstart', startDrag, { passive: false });
+
+
 window.addEventListener('mouseup', () => {
     if (isDragging) {
         isDragging = false;
     }
 });
-window.addEventListener('mousemove', (e) => {
+// window.addEventListener('mousemove', (e) => {
+//     if (!isDragging) return;
+//     const rect = knob.getBoundingClientRect();
+//     const x = e.clientX - (rect.left + rect.width / 2);
+//     const y = e.clientY - (rect.top + rect.height / 2);
+//     let angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
+//     if (angle > 180) angle -= 360;
+//     if (angle > MAX_ANGLE) angle = MAX_ANGLE;
+//     if (angle < MIN_ANGLE) angle = MIN_ANGLE;
+//
+//     currentRotation = angle;
+//     knob.style.transform = `rotate(${currentRotation}deg)`;
+//     const volumePercent = Math.round(((currentRotation - MIN_ANGLE) / (MAX_ANGLE - MIN_ANGLE)) * 100);
+//     volDisplay.innerText = volumePercent;
+//     window.localPlayerVolume = volumePercent / 100;
+//
+//     if (window.audioGainNode) {
+//         window.audioGainNode.gain.setTargetAtTime(window.localPlayerVolume, window.audioCtx.currentTime, 0.05);
+//     }
+//
+// });
+
+function onDrag(e) {
     if (!isDragging) return;
+
+    const coords = getCoords(e)
     const rect = knob.getBoundingClientRect();
-    const x = e.clientX - (rect.left + rect.width / 2);
-    const y = e.clientY - (rect.top + rect.height / 2);
+    const x = coords.x - (rect.left + rect.width / 2);
+    const y = coords.y - (rect.top + rect.height / 2);
+
     let angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
     if (angle > 180) angle -= 360;
     if (angle > MAX_ANGLE) angle = MAX_ANGLE;
@@ -207,8 +247,11 @@ window.addEventListener('mousemove', (e) => {
     if (window.audioGainNode) {
         window.audioGainNode.gain.setTargetAtTime(window.localPlayerVolume, window.audioCtx.currentTime, 0.05);
     }
+}
 
-});
+window.addEventListener('mousemove', onDrag);
+window.addEventListener('touchmove', onDrag, { passive: false });
+
 
 const startStopBtn = document.getElementById('start-stop-btn');
 const searchUpBtn = document.getElementById('search-up');
@@ -263,15 +306,15 @@ function startSearch(direction) {
     if (isSearching) return;
     isSearching = true;
 
-    searchUpBtn.disabled = true;
-    searchDownBtn.disabled = true;
+    //searchUpBtn.disabled = true;
+    //searchDownBtn.disabled = true;
 
     sendWsCommand(direction === 'up' ? 'scan_up' : 'scan_down');
 
     // safety timeout
     searchTimeout = setTimeout(() => {
         finishSearch(false);
-    }, 8000);
+    }, 4000);
 }
 
 function finishSearch(success) {

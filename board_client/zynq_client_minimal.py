@@ -108,16 +108,22 @@ async def command_receiver(ws):
                         await ws.send(json.dumps({"type": "state_update", "freq": current_freq}))
                     case "scan_up":
                         logger.info(f"Start searching up...")
-                        await asyncio.to_thread(radio_hw.search_up)
+                        # new_freq = await asyncio.to_thread(radio_hw.search_up)
+                        new_freq = radio_hw.search_up()
+                        await ws.send(json.dumps({"type": "state_update", "freq": new_freq}))
+                        # await ws.send(json.dumps({"type": "state_update", "freq": new_freq}))
+                        # await asyncio.to_thread(radio_hw.search_up)
                         
-                        current_freq = radio_hw.get_freq()
-                        await ws.send(json.dumps({"type": "state_update", "freq": current_freq}))
+                        # current_freq = radio_hw.get_freq()
+                        # await ws.send(json.dumps({"type": "state_update", "freq": current_freq}))
                     case "scan_down":
                         logger.info(f"Start searching down...")
-                        await asyncio.to_thread(radio_hw.search_down)
-                        
-                        current_freq = radio_hw.get_freq()
-                        ws.send(json.dumps({"type": "state_update", "freq": current_freq}))
+                        # new_freq = await asyncio.to_thread(radio_hw.search_down)
+                        new_freq = radio_hw.search_down()
+                        await ws.send(json.dumps({"type": "state_update", "freq": new_freq}))
+                        # await asyncio.to_thread(radio_hw.search_down)
+                        # current_freq = radio_hw.get_freq()
+                        # await ws.send(json.dumps({"type": "state_update", "freq": current_freq}))
                     case _:
                         logger.warning(f"Unknown command <{cmd}>")
 
@@ -170,7 +176,7 @@ async def main():
 
                 sender_task = asyncio.create_task(audio_sender(ws))
                 receiver_task = asyncio.create_task(command_receiver(ws))
-                irq_task = asyncio.create_task(interrupt_listener(ws))
+                #irq_task = asyncio.create_task(interrupt_listener(ws))
 
                 while True:
                     timestamp = int(time.time())
@@ -178,7 +184,7 @@ async def main():
                         logger.info("Token is about to expire. Initiating reconnect.")
                         break
 
-                    if sender_task.done() or receiver_task.done() or irq_task.done():
+                    if sender_task.done() or receiver_task.done():
                         logger.warning("One of the background tasks finished. Restarting...")
                         break
 
@@ -186,7 +192,7 @@ async def main():
 
                 sender_task.cancel()
                 receiver_task.cancel()
-                irq_task.cancel()
+                # irq_task.cancel()
 
         except websockets.exceptions.ConnectionClosedError as e:
             if e.code == 1008:

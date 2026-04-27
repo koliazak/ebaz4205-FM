@@ -66,6 +66,7 @@ body {
     font-size: 14px;
 }
 
+/* Елементи керування */
 .controls {
     display: flex;
     flex-direction: column;
@@ -86,6 +87,7 @@ body {
     letter-spacing: 1px;
 }
 
+/* Стилізація Range Slider (Частота) */
 input[type=range] {
     -webkit-appearance: none;
     width: 100%;
@@ -118,6 +120,7 @@ input[type=range]::-webkit-slider-thumb {
     border: 1px solid #111;
 }
 
+/* Стилізація Крутилки (Гучність) */
 .knob-container {
     width: 80px;
     height: 80px;
@@ -137,7 +140,7 @@ input[type=range]::-webkit-slider-thumb {
     position: relative;
     cursor: pointer;
     box-shadow: 0 5px 15px rgba(0,0,0,0.6), inset 0 2px 2px rgba(255,255,255,0.1);
-    transform: rotate(0deg);
+    transform: rotate(0deg); /* Керується через JS */
 }
 
 .knob-indicator {
@@ -152,6 +155,7 @@ input[type=range]::-webkit-slider-thumb {
     box-shadow: 0 0 5px #00ffcc;
 }
 
+/* --- Кнопки керування --- */
 .action-buttons {
     display: flex;
     justify-content: space-between;
@@ -182,6 +186,7 @@ input[type=range]::-webkit-slider-thumb {
     font-size: 16px;
 }
 
+/* Світіння при наведенні на пошук */
 .search-btn:hover {
     color: #00ffcc;
     border-color: #00ffcc;
@@ -194,14 +199,16 @@ input[type=range]::-webkit-slider-thumb {
     cursor: not-allowed;
 }
 
+/* Головна кнопка Start/Stop */
 .main-btn {
     padding: 12px 30px;
     font-size: 18px;
     letter-spacing: 2px;
-    color: #00ffcc;
+    color: #00ffcc; /* Червоний в стані вимкнено */
     border-color: #004433;
 }
 
+/* Стан "Увімкнено" */
 .main-btn.playing {
     color: #ff3366;
     border-color: #551122;
@@ -209,6 +216,7 @@ input[type=range]::-webkit-slider-thumb {
     box-shadow: 0 0 15px rgba(0,255,204,0.2), inset 0 1px 1px rgba(255,255,255,0.05);
 }
 
+/* --- Збережені станції --- */
 .saved-stations-container {
     margin-top: 25px;
     padding-top: 20px;
@@ -237,12 +245,12 @@ input[type=range]::-webkit-slider-thumb {
 
 .stations-list {
     list-style: none;
-    max-height: 120px;
+    max-height: 120px; /* Обмежуємо висоту для появи скролу */
     overflow-y: auto;
     padding-right: 5px;
 }
 
-
+/* Кастомний скролбар для списку */
 .stations-list::-webkit-scrollbar {
     width: 4px;
 }
@@ -254,7 +262,7 @@ input[type=range]::-webkit-slider-thumb {
     border-radius: 2px;
 }
 
-
+/* Елемент списку */
 .station-item {
     display: flex;
     justify-content: space-between;
@@ -280,6 +288,7 @@ input[type=range]::-webkit-slider-thumb {
     text-shadow: 0 0 3px rgba(0,255,204,0.3);
 }
 
+/* Кнопка видалення (Х) */
 .station-delete {
     background: none;
     border: none;
@@ -297,7 +306,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 .view {
-
+    /* Допоміжний клас для перемикання екранів */
 }
 
 .auth-input {
@@ -351,7 +360,7 @@ input[type=range]::-webkit-slider-thumb {
     flex-direction: column;
     gap: 10px;
     z-index: 1000;
-    pointer-events: none;
+    pointer-events: none; /* Щоб кліки проходили крізь них, якщо треба */
 }
 
 .toast {
@@ -366,7 +375,7 @@ input[type=range]::-webkit-slider-thumb {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.05);
     opacity: 0;
     transform: translateX(120%);
-    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Ефект пружинки */
 }
 
 .toast.show {
