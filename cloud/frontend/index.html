@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Radio Player</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<div id="login-view" class="radio-player view active">
+    <h1 class="radio-title">LOGIN</h1>
+    <div class="controls">
+        <input type="text" id="login-user" class="auth-input" placeholder="USERNAME">
+        <input type="password" id="login-pass" class="auth-input" placeholder="PASSWORD">
+
+        <div class="control-group" style="gap: 10px; width: 100%;">
+            <button class="btn main-btn" style="width: 100%;" onclick="handleLogin()">CONNECT</button>
+            <button class="btn search-btn" style="width: 100%;" onclick="handleGuest()">GUEST MODE</button>
+        </div>
+
+        <div class="auth-links">
+            NO ACCOUNT? <a href="#" onclick="switchView('register-view')">REGISTER</a>
+        </div>
+    </div>
+</div>
+
+<div id="register-view" class="radio-player view" style="display: none;">
+    <h1 class="radio-title">REGISTER</h1>
+    <div class="controls">
+        <input type="text" id="reg-user" class="auth-input" placeholder="NEW USERNAME">
+        <input type="password" id="reg-pass" class="auth-input" placeholder="NEW PASSWORD">
+
+        <div class="control-group" style="gap: 10px; width: 100%;">
+            <button class="btn main-btn" style="width: 100%;" onclick="handleRegister()">CREATE</button>
+        </div>
+
+        <div class="auth-links">
+            HAS ACCOUNT? <a href="#" onclick="switchView('login-view')">LOGIN</a>
+        </div>
+    </div>
+</div>
+
+<div id="player-view" class="radio-player view" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 class="radio-title" style="margin-bottom: 0;">RADIO</h1>
+        <button class="btn small-btn" style="color: #ff3366;" onclick="handleLogout()">LOGOUT</button>
+    </div>
+
+    <div class="display">
+        <div class="display-item">
+            <span class="label">FM</span>
+            <span id="freq-display" class="value">87.5</span>
+            <span class="unit">MHz</span>
+        </div>
+        <div class="display-item">
+            <span class="label">VOL</span>
+            <span id="vol-display" class="value">50</span>
+            <span class="unit">%</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="action-buttons">
+            <button class="btn search-btn" id="search-down" title="Search down">⬅️</button>
+            <button class="btn main-btn" id="start-stop-btn">START</button>
+            <button class="btn search-btn" id="search-up" title="Search up">➡️</button>
+        </div>
+
+        <div class="control-group frequency-group">
+            <label for="freq-slider">Frequency</label>
+            <input type="range" id="freq-slider" min="87.5" max="108.0" step="0.1" value="87.5">
+        </div>
+
+        <div class="control-group volume-group">
+            <label>Volume</label>
+            <div class="knob-container">
+                <div class="knob" id="vol-knob">
+                    <div class="knob-indicator"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="saved-stations-container">
+        <div class="saved-header">
+            <h3>Favorites</h3>
+            <button id="save-btn" class="btn small-btn" title="Save Current">❤️</button>
+        </div>
+        <ul id="stations-list" class="stations-list"></ul>
+    </div>
+</div>
+
+<div id="notification-container"></div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
