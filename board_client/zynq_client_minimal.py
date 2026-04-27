@@ -3,12 +3,11 @@ import time
 import hmac
 import hashlib
 import uuid
-import jwt
-import requests
 import asyncio
 import websockets
 import json
-
+import urllib.request
+import base64
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,13 +41,17 @@ def get_jwt():
     }
 
     try:
-        response = requests.post(LOGIN_URL, json=payload, timeout=5)
-        if response.status_code == 200:
-            logger.info("HMAC Auth Success! Got JWT.")
-            return response.json()["access_token"]
-        else:
-            logger.error(f"Auth Failed: {response.status_code} - {response.text}", exc_info=True)
-            return None
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(LOGIN_URL, data=data, headers={'Content-Type': 'application/json'})
+
+        with urllib.request.urlopen(req, timeout=5) as response:
+            if response.getcode() == 200:
+                logger.info("HMAC Auth Success! Got JWT.")
+                response_data = json.loads(response.read().decode('utf-8'))
+                return response_data["access_token"]
+            else:
+                logger.error(f"Auth Failed: {response.getcode()}")
+                return None
     except Exception as e:
         logger.error(f"Network error: {e}", exc_info=True)
         return None
@@ -121,7 +124,11 @@ async def main():
             await asyncio.sleep(5)
             continue
 
-        exp = jwt.decode(token, options={"verify_signature": False})["exp"]
+        payload_b64 = token.split('.')[1]
+        payload_b64 += "=" * ((4 - len(payload_b64) % 4) % 4)
+        payload_json = base64.urlsafe_b64decode(payload_b64).decode('utf-8')
+
+        exp = json.loads(payload_json)["exp"]
 
         try:
             async with websockets.connect(WS_URL, additional_headers={"Authorization": f"Bearer {token}"}) as ws:
