@@ -60,7 +60,7 @@ async def client_websocket(websocket: WebSocket, token: str):
         payload = verify_jwt_token(token)
         user_id = require_user(payload, required_scope="audio:listen")
     except jwt.InvalidTokenError as ex:
-        logger.warning(f"Client WS Auth Failed: {e}")
+        logger.warning(f"Client WS Auth Failed: {ex}")
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
@@ -81,11 +81,11 @@ async def client_websocket(websocket: WebSocket, token: str):
 
             target_device = command_data.get("target")
             cmd = command_data.get("cmd")
-
+            value = command_data.get("value")
             if target_device in active_devices:
                 device_ws = active_devices[target_device]
-                await device_ws.send_json({"cmd": cmd})
-                logger.info(f"User '{user_id}' sent '{cmd}' to '{target_device}'")
+                await device_ws.send_json({"cmd": cmd, "value": value})
+                logger.info(f"User '{user_id}' sent '{cmd}' (value: {value}) to '{target_device}'")
             else:
                 await websocket.send_json({"error": f"Device {target_device} is offline"})
 

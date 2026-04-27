@@ -1,9 +1,13 @@
 import logging
+import os
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+from starlette.responses import FileResponse
+from starlette.staticfiles import StaticFiles
 
 from core.database import init_db, add_user
 from routers import device_api, client_api
@@ -60,15 +64,28 @@ app.include_router(
     prefix=""
 )
 
-
-
-@app.get("/")
+@app.get("/ping")
 async def health_check():
     return {
         "status": "online",
         "system": "Zynq Relay Server",
         "message": "Welcome! Use /docs for API documentation."
     }
+
+BASE_DIR = os.path.dirname(__file__)
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+STATIC_DIR = os.path.join(FRONTEND_DIR, "static")
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+@app.get("/")
+async def serve_frontend():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+@app.get("/api/auth/refresh")
+async def refresh_token(token: str):
+    # Тут ти перевіряєш старий токен і, якщо він валідний, видаєш новий на 15 хв.
+    # Для простоти зараз можна просто попросити юзера перелогінитись.
+    pass
 
 
 if __name__ == "__main__":
