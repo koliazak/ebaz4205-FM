@@ -83,8 +83,7 @@ async def serve_frontend():
 
 @app.get("/api/auth/refresh")
 async def refresh_token(token: str):
-    # Тут ти перевіряєш старий токен і, якщо він валідний, видаєш новий на 15 хв.
-    # Для простоти зараз можна просто попросити юзера перелогінитись.
+    # TODO Relogin with valid token
     pass
 
 
