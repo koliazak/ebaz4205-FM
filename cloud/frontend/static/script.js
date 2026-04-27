@@ -99,7 +99,6 @@ function connectWebSocket(token) {
 
     ws.onmessage = (event) => {
         if (event.data instanceof ArrayBuffer) {
-
             if (isPlaying && window.audioCtx) {
                 const view = new Uint8Array(event.data);
             	const frames = view.length / 2;
@@ -116,15 +115,27 @@ function connectWebSocket(token) {
                 source.buffer = buffer;
                 source.connect(window.audioGainNode);
 
-                if (nextTime < audioCtx.currentTime) {
-                    nextTime = audioCtx.currentTime + 0.1;
+                if (nextTime < window.audioCtx.currentTime) {
+                    nextTime = window.audioCtx.currentTime + 0.1;
                 }
                 source.start(nextTime);
                 nextTime += buffer.duration;
             }
         } else {
             const msg = JSON.parse(event.data);
-            if (msg.error) showNotification("Server: " + msg.error, true);
+            if (msg.error) {
+                showNotification("Server: " + msg.error, true);
+            }
+            else if (msg.type === "state_update" && msg.freq) {
+                const freqSlider = document.getElementById('freq-slider');
+                const freqDisplay = document.getElementById('freq-display');
+                freqSlider.value = msg.freq;
+
+                if (isSearching) finishSearch(true);
+                freqDisplay.innerText = msg.freq.toFixed(1);
+                freqDisplay.style.textShadow = "0 0 15px #00ffcc";
+                setTimeout(() => freqDisplay.style.textShadow = "0 0 5px rgba(0, 255, 204, 0.5)", 300);
+            }
         }
     };
 
@@ -218,9 +229,10 @@ startStopBtn.addEventListener('click', async () => {
         if (!window.audioCtx) {
             window.audioCtx = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 8000});
             window.audioGainNode = window.audioCtx.createGain();
+            window.audioGainNode.connect(window.audioCtx.destination);
         }
-        window.audioGainNode.audio.value = window.localPlayerVolume || 0.5;
-        window.audioGainNode.connect(window.audioCtx.destination);
+        window.audioGainNode.gain.value = window.localPlayerVolume || 0.5;
+        // window.audioGainNode.connect(window.audioCtx.destination);
 
         if (window.audioCtx.state === 'suspended') {
             await window.audioCtx.resume()
@@ -244,34 +256,42 @@ startStopBtn.addEventListener('click', async () => {
     }
 });
 
-function autoSearch(direction) {
-    if (searchInterval) return;
+let isSearching = false;
+let searchTimeout = null;
+
+function startSearch(direction) {
+    if (isSearching) return;
+    isSearching = true;
+
     searchUpBtn.disabled = true;
     searchDownBtn.disabled = true;
-    const step = direction === 'up' ? 0.1 : -0.1;
 
     sendWsCommand(direction === 'up' ? 'scan_up' : 'scan_down');
 
-    searchInterval = setInterval(() => {
-        let val = parseFloat(freqSlider.value) + step;
-        if (val > 108.0) val = 87.5;
-        if (val < 87.5) val = 108.0;
-        freqSlider.value = val;
-        freqDisplay.innerText = val.toFixed(1);
-
-        if (Math.random() < 0.05) {
-            clearInterval(searchInterval);
-            searchInterval = null;
-            searchUpBtn.disabled = false;
-            searchDownBtn.disabled = false;
-            freqDisplay.style.textShadow = "0 0 20px #ffffff, 0 0 30px #00ffcc";
-            setTimeout(() => freqDisplay.style.textShadow = "0 0 5px rgba(0, 255, 204, 0.5)", 400);
-        }
-    }, 50);
+    // safety timeout
+    searchTimeout = setTimeout(() => {
+        finishSearch(false);
+    }, 8000);
 }
 
-searchUpBtn.addEventListener('click', () => autoSearch('up'));
-searchDownBtn.addEventListener('click', () => autoSearch('down'));
+function finishSearch(success) {
+    isSearching = false;
+    searchUpBtn.disabled = false;
+    searchDownBtn.disabled = false;
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+        searchTimeout = null;
+    }
+
+    if (success) {
+        freqDisplay.style.textShadow = "0 0 20px #ffffff, 0 0 30px #00ffcc";
+        setTimeout(() => freqDisplay.style.textShadow = "0 0 5px rgba(0, 255, 204, 0.5)", 400);
+    } else {
+        showNotification("Search timeout", true);
+    }
+}
+searchUpBtn.addEventListener('click', () => startSearch('up'));
+searchDownBtn.addEventListener('click', () => startSearch('down'));
 
 const saveBtn = document.getElementById('save-btn');
 const stationsList = document.getElementById('stations-list');

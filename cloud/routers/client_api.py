@@ -6,7 +6,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status, HTTPExcep
 from bcrypt import hashpw, checkpw, gensalt
 from pydantic import BaseModel
 
-from core.state import active_clients, active_devices
+from core.state import active_clients, active_devices, device_metadata
 from core.security import verify_jwt_token, require_user, create_user_jwt
 from core.database import add_user, find_user
 
@@ -68,6 +68,15 @@ async def client_websocket(websocket: WebSocket, token: str):
     active_clients.add(websocket)
     logger.info(f"User {user_id} joined the stream.")
 
+    # TODO multiple devices
+    # for dev_id, meta in device_metadata.items():
+    #     if isinstance(meta, dict) and "freq" in meta:
+    #         await websocket.send_json({"type": "state_update", "device_id": dev_id, "freq": meta["freq"]})
+
+    target_device = "zynq_81480f26"
+    last = device_metadata.get(target_device)
+    if isinstance(last, dict) and "freq" in last:
+        await websocket.send_json({"type": "state_update", "freq": last["freq"]})
 
     try:
         while True:
@@ -90,8 +99,7 @@ async def client_websocket(websocket: WebSocket, token: str):
                 await websocket.send_json({"error": f"Device {target_device} is offline"})
 
     except WebSocketDisconnect:
-        if websocket in active_clients:
-            active_clients.remove(websocket)
+        active_clients.discard(websocket)
         logger.info(f"User {user_id} left the stream.")
 
     except Exception as e:

@@ -9,6 +9,9 @@ import json
 import urllib.request
 import base64
 
+import hw_control
+
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - [%(name)s] - %(message)s",
@@ -24,9 +27,10 @@ DEVICE_SECRET = b"53b335ce1e58bec9329dfc6878b3253e04044b21d39e69b026cbbdd66f9893
 LOGIN_URL = "https://techforge.best/api/device/login"
 WS_URL = "wss://techforge.best/device/ws"
 
+radio_hw = hw_control.FPGARadioController()
+
 def generate_hmac(secret: bytes, message: str) -> str:
     return hmac.new(secret, message.encode(), hashlib.sha256).hexdigest()
-
 
 def get_jwt():
     timestamp = int(time.time())
@@ -71,8 +75,7 @@ async def audio_sender(ws):
     try:
         while True:
             data = await process.stdout.read(1024)
-            # data = 1024 * b"d5"
-            # await asyncio.sleep(0.1)
+
             if not data:
                 break
 
@@ -99,10 +102,22 @@ async def command_receiver(ws):
                 match cmd:
                     case "set_freq":
                         logger.info(f"Setting frequency to {value}MHz")
+                        await asyncio.to_thread(radio_hw.set_freq, value)
+                        
+                        current_freq = radio_hw.get_freq()
+                        await ws.send(json.dumps({"type": "state_update", "freq": current_freq}))
                     case "scan_up":
                         logger.info(f"Start searching up...")
+                        await asyncio.to_thread(radio_hw.search_up)
+                        
+                        current_freq = radio_hw.get_freq()
+                        await ws.send(json.dumps({"type": "state_update", "freq": current_freq}))
                     case "scan_down":
                         logger.info(f"Start searching down...")
+                        await asyncio.to_thread(radio_hw.search_down)
+                        
+                        current_freq = radio_hw.get_freq()
+                        ws.send(json.dumps({"type": "state_update", "freq": current_freq}))
                     case _:
                         logger.warning(f"Unknown command <{cmd}>")
 
@@ -112,6 +127,23 @@ async def command_receiver(ws):
     except asyncio.CancelledError:
         logger.info("Command Receiver Task stopped.")
 
+    except Exception as ex:
+        logger.error(f"Error in Command Receiver: {ex}", exc_info=True)
+
+async def interrupt_listener(ws):
+    logger.info("Interrupt Listener Task started.")
+    try:
+        while True:
+            irq = await asyncio.to_thread(radio_hw.wait_irq)
+
+            if irq:
+                logger.info("Interrupt received. Search operation is done.")
+                current_freq = await asyncio.to_thread(radio_hw.get_freq)
+                payload = {"type": "state_update", "freq": current_freq}
+                await ws.send(json.dumps(payload))
+
+    except asyncio.CancelledError:
+        logger.info("Interrupt Listener Task stopped.")
     except Exception as ex:
         logger.error(f"Error in Command Receiver: {ex}", exc_info=True)
 
@@ -132,10 +164,13 @@ async def main():
 
         try:
             async with websockets.connect(WS_URL, additional_headers={"Authorization": f"Bearer {token}"}) as ws:
+                current_freq = await asyncio.to_thread(radio_hw.get_freq)
+                await ws.send(json.dumps({"type": "state_update", "freq": current_freq}))
                 logger.info("WebSocket Connected!")
 
                 sender_task = asyncio.create_task(audio_sender(ws))
                 receiver_task = asyncio.create_task(command_receiver(ws))
+                irq_task = asyncio.create_task(interrupt_listener(ws))
 
                 while True:
                     timestamp = int(time.time())
@@ -143,7 +178,7 @@ async def main():
                         logger.info("Token is about to expire. Initiating reconnect.")
                         break
 
-                    if sender_task.done() or receiver_task.done():
+                    if sender_task.done() or receiver_task.done() or irq_task.done():
                         logger.warning("One of the background tasks finished. Restarting...")
                         break
 
@@ -151,6 +186,7 @@ async def main():
 
                 sender_task.cancel()
                 receiver_task.cancel()
+                irq_task.cancel()
 
         except websockets.exceptions.ConnectionClosedError as e:
             if e.code == 1008:

@@ -1,10 +1,10 @@
+import json
 import logging
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from pydantic import BaseModel
 import jwt
 
-from core.state import active_clients, active_devices
+from core.state import active_clients, active_devices, device_metadata
 from core.security import (
     verify_jwt_token,
     verify_device_auth,
@@ -52,33 +52,56 @@ async def device_websocket(websocket: WebSocket):
 
     try:
         payload = verify_jwt_token(token)
-        # print(f"{payload=}: {payload["sub"]}")
         device_id = await require_device(payload=payload, required_scope="audio:stream")
     except jwt.InvalidTokenError as ex:
         logger.warning(f"WS Auth Failed: {ex}")
         await websocket.close(1008)
         return
 
+    await websocket.accept()
     active_devices[payload["sub"].split(":", 1)[1]] = websocket
     logger.info(f"Device {device_id} connected securely!")
-    await websocket.accept()
 
     try:
         while True:
-            audio_chunk = await websocket.receive_bytes()
+            message = await websocket.receive()
 
-            dead_clients = []
+            if "bytes" in message and message["bytes"]:
 
-            for client_ws in active_clients:
+                dead_clients = []
+                for client_ws in active_clients:
+                    try:
+                        await client_ws.send_bytes(message["bytes"])
+                    except Exception as ex:
+                        logger.warning(ex)
+                        dead_clients.append(client_ws)
+
+                for dead in dead_clients:
+                    if dead in active_clients:
+                        active_clients.remove(dead)
+
+            elif "text" in message and message["text"]:
                 try:
-                    await client_ws.send_bytes(audio_chunk)
-                except Exception as ex:
-                    logger.warning(ex)
-                    dead_clients.append(client_ws)
+                    data = json.loads(message["text"])
 
-            for dead in dead_clients:
-                if dead in active_clients:
-                    active_clients.remove(dead)
+                    if data.get("type") == "state_update":
+                        try:
+                            device_metadata[device_id].update(data)
+                        except KeyError:
+                            device_metadata[device_id] = data
+                    dead_clients = []
+                    for client_ws in active_clients:
+                        try:
+                            await client_ws.send_text(message["text"])
+                        except Exception as ex:
+                            logger.warning(ex)
+                            dead_clients.append(client_ws)
+
+                    for dead in dead_clients:
+                        if dead in active_clients:
+                            active_clients.remove(dead)
+                except json.JSONDecodeError:
+                    logger.error(f"Received invalid JSON from board {device_id}")
 
     except WebSocketDisconnect as ex:
         logger.info(f"Device {device_id} disconnected")
