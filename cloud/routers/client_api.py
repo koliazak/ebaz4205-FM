@@ -96,10 +96,18 @@ async def client_websocket(websocket: WebSocket, token: str):
             value = command_data.get("value")
             if target_device in active_devices:
                 device_ws = active_devices[target_device]
-                await device_ws.send_json({"cmd": cmd, "value": value})
-                logger.info(f"User '{user_id}' sent '{cmd}' (value: {value}) to '{target_device}'")
+                try:
+                    await device_ws.send_json({"cmd": cmd, "value": value})
+                    logger.info(f"User '{user_id}' sent '{cmd}' (value: {value}) to '{target_device}'")
+                except RuntimeError as e:
+                    logger.error(f"Device '{target_device}' socket is dead! Cleaning up.")
+                    del active_devices[target_device]
+                    await websocket.send_json({"error": f"The radio module is temporarily offline. Please wait. The connection will be restored automatically."})
+                except Exception as ex:
+                    logger.error(f"Failed to send to device '{target_device}': {e}")
+                    await websocket.send_json({"error": "Error: Couldn't send command to the board."})
             else:
-                await websocket.send_json({"error": f"Device {target_device} is offline"})
+                await websocket.send_json({"error": "The radio module is temporarily offline. Please wait. The connection will be restored automatically."})
 
     except WebSocketDisconnect:
         active_clients.discard(websocket)

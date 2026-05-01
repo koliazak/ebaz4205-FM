@@ -61,7 +61,8 @@ async def device_websocket(websocket: WebSocket):
     await websocket.accept()
     active_devices[payload["sub"].split(":", 1)[1]] = websocket
     logger.info(f"Device {device_id} connected securely!")
-
+    # logger.info(f"{active_devices=}")
+    # logger.info(f"{device_metadata=}")
     try:
         while True:
             message = await websocket.receive()
@@ -81,6 +82,7 @@ async def device_websocket(websocket: WebSocket):
                         active_clients.remove(dead)
 
             elif "text" in message and message["text"]:
+                logging.info(f"device {device_id} sent: {message["text"]}")
                 try:
                     data = json.loads(message["text"])
 
@@ -89,6 +91,7 @@ async def device_websocket(websocket: WebSocket):
                             device_metadata[device_id].update(data)
                         except KeyError:
                             device_metadata[device_id] = data
+
                     dead_clients = []
                     for client_ws in active_clients:
                         try:

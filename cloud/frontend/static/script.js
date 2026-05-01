@@ -124,7 +124,7 @@ function connectWebSocket(token) {
         } else {
             const msg = JSON.parse(event.data);
             if (msg.error) {
-                showNotification("Server: " + msg.error, true);
+                showNotification("Server: " + msg.error, true, 5000);
             }
             else if (msg.type === "state_update" && msg.freq) {
                 const freqSlider = document.getElementById('freq-slider');
@@ -203,27 +203,6 @@ window.addEventListener('mouseup', () => {
         isDragging = false;
     }
 });
-// window.addEventListener('mousemove', (e) => {
-//     if (!isDragging) return;
-//     const rect = knob.getBoundingClientRect();
-//     const x = e.clientX - (rect.left + rect.width / 2);
-//     const y = e.clientY - (rect.top + rect.height / 2);
-//     let angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
-//     if (angle > 180) angle -= 360;
-//     if (angle > MAX_ANGLE) angle = MAX_ANGLE;
-//     if (angle < MIN_ANGLE) angle = MIN_ANGLE;
-//
-//     currentRotation = angle;
-//     knob.style.transform = `rotate(${currentRotation}deg)`;
-//     const volumePercent = Math.round(((currentRotation - MIN_ANGLE) / (MAX_ANGLE - MIN_ANGLE)) * 100);
-//     volDisplay.innerText = volumePercent;
-//     window.localPlayerVolume = volumePercent / 100;
-//
-//     if (window.audioGainNode) {
-//         window.audioGainNode.gain.setTargetAtTime(window.localPlayerVolume, window.audioCtx.currentTime, 0.05);
-//     }
-//
-// });
 
 function onDrag(e) {
     if (!isDragging) return;
@@ -393,7 +372,7 @@ saveBtn.addEventListener('click', () => {
     }
 });
 
-function showNotification(message, isError = false) {
+function showNotification(message, isError = false, timeout = 3000) {
     const container = document.getElementById('notification-container');
     if (!container) return;
 
@@ -410,7 +389,7 @@ function showNotification(message, isError = false) {
     setTimeout(() => {
         toast.classList.remove('show');
         toast.addEventListener('transitionend', () => toast.remove());
-    }, 3000);
+    }, timeout);
 }
 
 function alawToFloat(a_val) {

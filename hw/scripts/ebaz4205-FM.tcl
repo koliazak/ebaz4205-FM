@@ -577,6 +577,8 @@ proc create_root_design { parentCell } {
   [get_bd_pins axi_dma_0/s_axis_s2mm_tlast]
   connect_bd_net -net axis_data_fifo_0_m_axis_tvalid  [get_bd_pins axis_data_fifo_0/m_axis_tvalid] \
   [get_bd_pins axi_dma_0/s_axis_s2mm_tvalid]
+  connect_bd_net -net axis_data_fifo_0_s_axis_tready  [get_bd_pins axis_data_fifo_0/s_axis_tready] \
+  [get_bd_pins fm_radio_ctrl_0/m_axis_audio_tready]
   connect_bd_net -net fm_radio_ctrl_0_DC  [get_bd_pins fm_radio_ctrl_0/DC] \
   [get_bd_ports DC]
   connect_bd_net -net fm_radio_ctrl_0_SCL  [get_bd_pins fm_radio_ctrl_0/SCL] \
@@ -591,6 +593,12 @@ proc create_root_design { parentCell } {
   [get_bd_ports i2s_mclk]
   connect_bd_net -net fm_radio_ctrl_0_irq  [get_bd_pins fm_radio_ctrl_0/irq] \
   [get_bd_pins xlconcat_0/In1]
+  connect_bd_net -net fm_radio_ctrl_0_m_axis_audio_tdata  [get_bd_pins fm_radio_ctrl_0/m_axis_audio_tdata] \
+  [get_bd_pins axis_data_fifo_0/s_axis_tdata]
+  connect_bd_net -net fm_radio_ctrl_0_m_axis_audio_tlast  [get_bd_pins fm_radio_ctrl_0/m_axis_audio_tlast] \
+  [get_bd_pins axis_data_fifo_0/s_axis_tlast]
+  connect_bd_net -net fm_radio_ctrl_0_m_axis_audio_tvalid  [get_bd_pins fm_radio_ctrl_0/m_axis_audio_tvalid] \
+  [get_bd_pins axis_data_fifo_0/s_axis_tvalid]
   connect_bd_net -net fm_radio_ctrl_0_nRES  [get_bd_pins fm_radio_ctrl_0/nRES] \
   [get_bd_ports nRES]
   connect_bd_net -net fm_radio_ctrl_0_search_en_led  [get_bd_pins fm_radio_ctrl_0/search_en_led] \
